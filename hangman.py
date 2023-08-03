@@ -146,7 +146,7 @@ def updateSecret(guessed, game):
         return secret
 
 # Picks a (new) random word from freeDictionaryAPI (https://github.com/meetDeveloper/freeDictionaryAPI)
-def roll(word, res, mean):
+def roll():
     while True:
         try: 
             # Gets Random Word out of list in file
@@ -157,6 +157,7 @@ def roll(word, res, mean):
             break
         except:
             pass
+    return word, res, mean
 
 #print(res, "\n", type(res), len(res))
 #print(r, "\n", type(r), len(r))
