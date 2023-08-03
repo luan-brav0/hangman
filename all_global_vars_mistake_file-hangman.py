@@ -2,10 +2,10 @@ import random
 import requests
 import json
 
-TOTAL_WORDS = 166432
+total_words = 166432
 
 def main():
-    global hints, mis, guessed, word, res, coins, stpdwd, secret, game, message, mean
+    hints, mis, guessed, word, res, coins, stpdwd, secret, game, message, mean = resetVars ()
     while True:
         reset()
         message = "Welcome to Hangman!"
@@ -16,8 +16,7 @@ def main():
                 handleGuess()
         handleEnd()
 
-def reset():
-    global hints, mis, guessed, word, res, coins, stpdwd, secret, game, message, mean
+def resetVars():
     hints = 0
     mis = 0
     guessed = []
@@ -26,6 +25,7 @@ def reset():
     stripWord()
     secret = updateSecret()
     game = True
+    return hints, mis, guessed, word, res, coins, stpdwd, secret, game, message, mean
 
 
 def quit():
@@ -45,8 +45,7 @@ def handleEnd():
     if hints > 0:
         printHints()
 
-def renderMan():
-    global mis, secret, message, word, hints
+def renderMan(mis, secret, message, word, hints):
     #{min}m{sec}s   - {coins} Moedas")
     # Man
     scrt = ""
@@ -81,9 +80,7 @@ def renderMan():
     # Secret and base
     print(f"____|_    {(scrt).upper()}")
 
-
-def handleGuess():
-    global guessed, message, mis, secret, word
+def handleGuess(guessed, message, mis, secret, word):
     while True:
         try:
             print("\nPlease, enter a letter, [1] to get a hint or [0] to quit")
@@ -115,8 +112,7 @@ def handleGuess():
         else:
             continue
 
-def stripWord():
-    global word, stpdwd
+def stripWord(word, stpdwd):
     if word[-3:] == 'ing' or word[-3:] == 'ies':
         stpdwd = word[:-3]
     elif word[-2:] == 'ed':
@@ -126,8 +122,7 @@ def stripWord():
     else:
         stpdwd = word
 
-def updateSecret():
-    global guessed, game
+def updateSecret(guessed, game):
     secret = ""
 
     # has game just begun
@@ -151,8 +146,7 @@ def updateSecret():
         return secret
 
 # Picks a (new) random word from freeDictionaryAPI (https://github.com/meetDeveloper/freeDictionaryAPI)
-def roll():
-    global word, res, mean
+def roll(word, res, mean):
     while True:
         try: 
             # Gets Random Word out of list in file
@@ -173,9 +167,8 @@ def roll():
 # Clean striped word for censoring the definitions
 #print(stpdwd)
 
-def printHints():
+def printHints(hints, mean, stpdwd, word):
     # Prints each definition the player has unlocked
-    global hints, mean, stpdwd, word
     for i in range(hints):
         print(mean[i]["partOfSpeech"], ":")
         print("\t" + mean[i]["definitions"][0]["definition"].lower().replace(word, "*" * len(word)).replace(stpdwd, "*" * len(stpdwd)).capitalize())
@@ -184,8 +177,7 @@ def printHints():
         except:
             pass
 
-def newHint():
-    global hints, mean, message
+def newHint(hints, mean, message):
     if hints == len(mean):
         message = "\t No more available hints!"
         return
@@ -193,8 +185,7 @@ def newHint():
         hints += 1
     renderMan()
 
-def autoHints():
-    global hints, mis, mean, game
+def autoHints(hints, mis, mean, game):
     if mis == 2 and hints < 1:
         hints = 1
     if mis == 4 and hints < 2 and len(mean) > 1:
