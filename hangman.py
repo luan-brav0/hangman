@@ -2,57 +2,56 @@ import random
 import requests
 import json
 
-total_words = 166432
+TOTAL_WORDS = 166432
 
 def main():
-    hints, mis, guessed, word, res, coins, stpdwd, secret, game, message, mean = resetVars ()
+    global hints, mis, guessed, word, res, coins, stpdwd, secret, game, message, mean
     while True:
-        reset()
+        resetVars()
+        coins = 0
         message = "Welcome to Hangman!"
-
         while mis < 5 or game:
             renderMan()
             if game == True:
-                handleGuess()
+                 handleGuess()
         handleEnd()
 
 def resetVars():
+    global hints, mis, guessed, word, res, coins, stpdwd, secret, game, message, mean
     hints = 0
     mis = 0
     guessed = []
     roll()
-    coins = 0
     stripWord()
-    secret = updateSecret()
+    updateSecret()
     game = True
-    return hints, mis, guessed, word, res, coins, stpdwd, secret, game, message, mean
 
-
-def quit():
-    print("See you later!")
-    exit()
-
-def handleEnd():
+# Picks a (new) random word from freeDictionaryAPI (https://github.com/meetDeveloper/freeDictionaryAPI)
+def roll():
+    global word, res, mean
     while True:
-        renderMan()
-        keepPlaying = input("\n> Play Again? (y/n) ").lower()
-        if keepPlaying != "n" or keepPlaying != "no":
-            quit()
-        else:
-            game = True
-            return
-    autoHints()
-    if hints > 0:
-        printHints()
+        try: 
+            # Gets Random Word out of list in file
+            word  = random.choice(open('dictionary.txt', encoding='utf-8').readlines()).strip().lower()            # Dictionary definition as JSON object
+            res = requests.get(f'https://api.dictionaryapi.dev/api/v2/entries/en/{word}').json()
+            mean = res[0]["meanings"]
+            break
+        except:
+            pass
 
-def renderMan(mis, secret, message, word, hints):
-    #{min}m{sec}s   - {coins} Moedas")
-    # Man
+# Prints each definition the player has unlocked
+
+def renderMan():
+    global mis, coins, hints, mean, message, word, secret
+    print("\n=======================================================================\n")
+    print(f"{('❤️' * (5 - mis) + ('❌' * mis))}  -  Coins: {coins}  -  Hints: {hints} / {len(mean)}")
+    # format secret string
     scrt = ""
     for i in secret:
         scrt += i + " "
     message = message.upper()
-    print("\n"+str(guessed).replace("'", "").upper())
+    print(str(guessed).replace("'", "").upper() + "\n")
+    # the man, the message and the secret
     if mis == 0:
         print("     ______|")
     else:
@@ -79,8 +78,10 @@ def renderMan(mis, secret, message, word, hints):
         print("    |")
     # Secret and base
     print(f"____|_    {(scrt).upper()}")
+    printHints()
 
-def handleGuess(guessed, message, mis, secret, word):
+def handleGuess():
+    global message, secret, mis, guessed, hints, coins
     while True:
         try:
             print("\nPlease, enter a letter, [1] to get a hint or [0] to quit")
@@ -88,31 +89,50 @@ def handleGuess(guessed, message, mis, secret, word):
         except:
             print("Error. Goodbye!")
             exit()
-            break
-        #guess = guess.lower()
-        if guess.isalpha():
-            if guess in guessed:
-                message = "You already guessed that letter"
-            elif guess in word:
-                guessed.append(guess)
-                message = "Good guess"
-                secret = updateSecret()
-            else:
-                mis += 1
-                message = "Try Again..."
-                guessed.append(guess)
-            break
-
-        elif guess == "1":
-            newHint()
-            break
-        elif guess == "0":
-            exit()
-            return
+        if len(guess) == 1:
+            if guess.isalpha():
+                if guess in guessed:
+                    message = "You already guessed that letter"
+                elif guess in word:
+                    guessed.append(guess)
+                    message = "Good guess"
+                    updateSecret()
+                else:
+                    mis += 1
+                    message = "Try Again..."
+                    guessed.append(guess)
+                break
+            elif guess == "1":
+                coins -= 1
+                newHint()
+                break
+            elif guess == "0":
+                exit()
         else:
             continue
+    autoHints()
+    if hints > 0:
+        printHints()
 
-def stripWord(word, stpdwd):
+def updateSecret():
+    global secret, word, guessed
+    secret = ""
+    # has game just begun
+    if len(guessed) == 0:
+        secret = "?" * len(word) 
+    # reveal correctly guessed letters
+    else: 
+        for i in range(0, len(word)):
+            if word[i] not in guessed:
+                secret += "?"
+            else:
+                secret += word[i]
+    # has word been guessed
+        if secret == word:
+            handleEnd()
+
+def stripWord():
+    global word, stpdwd
     if word[-3:] == 'ing' or word[-3:] == 'ies':
         stpdwd = word[:-3]
     elif word[-2:] == 'ed':
@@ -122,54 +142,10 @@ def stripWord(word, stpdwd):
     else:
         stpdwd = word
 
-def updateSecret(guessed, game):
-    secret = ""
+def printHints():
+    global word, mean, hints
+    # strip word
 
-    # has game just begun
-    if len(guessed) == 0:
-        secret = "? " * len(word) 
-        return secret
-
-    # reveal correctly guessed letters
-    for i in range(0, len(word)):
-        if word[i] not in guessed:
-            secret += "?"
-        else:
-            secret += word[i]
-
-    # has word been guessed
-    if secret != word:
-        return secret
-    else:
-        print("\n\tYOU WIN")
-        game = False
-        return secret
-
-# Picks a (new) random word from freeDictionaryAPI (https://github.com/meetDeveloper/freeDictionaryAPI)
-def roll():
-    while True:
-        try: 
-            # Gets Random Word out of list in file
-            word  = random.choice(open('dictionary.txt', encoding='utf-8').readlines()).strip().lower()
-            # Dictionary definition as JSON object
-            res = requests.get(f'https://api.dictionaryapi.dev/api/v2/entries/en/{word}').json()
-            mean = res[0]["meanings"]
-            break
-        except:
-            pass
-    return word, res, mean
-
-#print(res, "\n", type(res), len(res))
-#print(r, "\n", type(r), len(r))
-
-# Print each word definition with example
-#print(word) 
-
-# Clean striped word for censoring the definitions
-#print(stpdwd)
-
-def printHints(hints, mean, stpdwd, word):
-    # Prints each definition the player has unlocked
     for i in range(hints):
         print(mean[i]["partOfSpeech"], ":")
         print("\t" + mean[i]["definitions"][0]["definition"].lower().replace(word, "*" * len(word)).replace(stpdwd, "*" * len(stpdwd)).capitalize())
@@ -178,21 +154,39 @@ def printHints(hints, mean, stpdwd, word):
         except:
             pass
 
-def newHint(hints, mean, message):
+def newHint():
+    global hints, mean, message
     if hints == len(mean):
         message = "\t No more available hints!"
-        return
     else:
         hints += 1
-    renderMan()
-
-def autoHints(hints, mis, mean, game):
+    
+def autoHints():
+    global hints, game, mean, mis
     if mis == 2 and hints < 1:
         hints = 1
     if mis == 4 and hints < 2 and len(mean) > 1:
         hints = 2
     if mis == 5:
         game = False
+
+def handleEnd():
+    global secret, word, mis, hints, coins
+
+    while True:
+        if secret == word:
+            print("\n YOU WIN!")
+            coins += 5 - mis
+        keepPlaying = input("\n\t > > Play Again? (y/n) ").lower()
+        if keepPlaying in ['n', 'no', 'not', 'nao', 'não', 'ñ', '0']:
+            quit()
+        else:
+            break
+    resetVars()
+
+def quit():
+    print("See you later!")
+    exit()
 
 if __name__ == "__main__":
     main()
